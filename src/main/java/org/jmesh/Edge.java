@@ -1,18 +1,21 @@
 package org.jmesh;
 
+import org.jmesh.iterable.EdgeIterable;
+
 public class Edge {
-    public static class JEdgeDisk {
+    public static class EdgeDisk {
         public Edge prev;
         public Edge next;
 
     }
+
     public Loop loop = null;
 
     public Vert v1 = null;
     public Vert v2 = null;
 
-    public JEdgeDisk diskV1 = new JEdgeDisk();
-    public JEdgeDisk diskV2 = new JEdgeDisk();
+    public EdgeDisk diskV1 = new EdgeDisk();
+    public EdgeDisk diskV2 = new EdgeDisk();
 
 
     public Edge(Vert v1, Vert v2) {
@@ -22,14 +25,14 @@ public class Edge {
         this.attachDiskEdge(this.v2);
     }
 
-    private JEdgeDisk getDiskLinkFromVert(Vert v){
-        if(v == v2){
+    private EdgeDisk getDiskLinkFromVert(Vert v) {
+        if (v == v2) {
             return diskV2;
         }
         return diskV1;
     }
 
-    public static Edge findEdge(Vert v1, Vert v2){
+    public static Edge findEdge(Vert v1, Vert v2) {
         Edge edgeV1, edgeV2;
         if ((edgeV1 = v1.edge) != null && (edgeV2 = v2.edge) != null) {
             Edge edgeV1Iter = edgeV1, edgeV2Iter = edgeV2;
@@ -45,7 +48,7 @@ public class Edge {
         return null;
     }
 
-    public boolean isVertInEdge(Vert vert){
+    public boolean isVertInEdge(Vert vert) {
         return this.v1 == vert || this.v2 == vert;
     }
 
@@ -53,50 +56,61 @@ public class Edge {
         return (this.v1 == v1 && this.v2 == v2) || (this.v1 == v2 && this.v2 == v1);
     }
 
-    public Edge nextEdge(Vert v){
+    public boolean isEdgeLoop() {
+        Loop l = this.loop;
+        return (l != null && (l.radialNext == l));
+    }
+
+
+    public Edge nextEdge(Vert v) {
         return getDiskLinkFromVert(v).next;
     }
 
-    public Edge prevEdge(Vert v){
+    public Edge prevEdge(Vert v) {
         return getDiskLinkFromVert(v).prev;
     }
 
-    private void attachDiskEdge(Vert v){
-        if(v.edge == null){
-            JEdgeDisk dl1 = this.getDiskLinkFromVert(v);
+    void attachDiskEdge(Vert v) {
+        if (v.edge == null) {
+            EdgeDisk dl1 = this.getDiskLinkFromVert(v);
             v.edge = this;
             dl1.next = dl1.prev = this;
         } else {
-            JEdgeDisk dl1 = this.getDiskLinkFromVert(v);
-            JEdgeDisk dl2 = v.edge.getDiskLinkFromVert(v);
-            JEdgeDisk dl3 = dl2.prev != null ? dl1.prev.getDiskLinkFromVert(v) : null;
+            EdgeDisk dl1 = this.getDiskLinkFromVert(v);
+            EdgeDisk dl2 = v.edge.getDiskLinkFromVert(v);
+            EdgeDisk dl3 = dl2.prev != null ? dl1.prev.getDiskLinkFromVert(v) : null;
             dl1.next = v.edge;
             dl1.prev = dl2.prev;
 
             dl2.prev = this;
-            if(dl3 != null){
+            if (dl3 != null) {
                 dl3.next = this;
             }
         }
     }
 
-    private void detachDiskEdge(Vert v){
-        JEdgeDisk dl1, dl2;
+    void detachDiskEdge(Vert v) {
+        EdgeDisk dl1, dl2;
         dl1 = getDiskLinkFromVert(v);
-        if(dl1.prev != null){
+        if (dl1.prev != null) {
             dl2 = dl1.prev.getDiskLinkFromVert(v);
             dl2.next = dl1.next;
         }
-        if(dl1.next != null) {
+        if (dl1.next != null) {
             dl2 = dl1.next.getDiskLinkFromVert(v);
             dl2.prev = dl1.prev;
         }
 
-        if(v.edge == this) {
+        if (v.edge == this) {
             v.edge = (this != dl1.next) ? dl1.next : null;
         }
 
         dl1.next = dl1.prev = null;
+    }
+
+    void detachDiskEdges(){
+        detachDiskEdge(v1);
+        detachDiskEdge(v2);
     }
 
     private boolean swapDiskVert(Vert src, Vert dest) {
@@ -114,19 +128,14 @@ public class Edge {
         return false;
     }
 
-    public void swapEdgeVert(Vert src, Vert dest){
-        if (loop != null)
-        {
+    public void swapEdgeVert(Vert src, Vert dest) {
+        if (loop != null) {
             Loop iter, first;
             iter = first = loop;
-            do
-            {
-                if (iter.v == src)
-                {
+            do {
+                if (iter.v == src) {
                     iter.v = dest;
-                }
-                else if (iter.radialNext.v == src)
-                {
+                } else if (iter.radialNext.v == src) {
                     iter.radialNext.v = dest;
                 }
 
